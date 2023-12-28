@@ -2,124 +2,35 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import os
 import project_status_updater
+from settings_manager import SettingsManager
 
 
 class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inherits from tk.Tk
-
+    APP_NAME = 'ToD Planning Dept Project Status Sync Tool'
+    APP_AUTHOR = 'gov.duxbury-ma'
+    APP_WINDOW_DIMENSIONS = '750x350'
     ERROR_COLOR = 'red'  # Constant for the error message color
-    PADX_VALUE = 10  # Constant padding in the x direction
-    PADY_UPPER_VALUE = (10, 0)  # Constant upper padding in the y direction
-    PADY_LOWER_VALUE = (0, 5)  # Constant lower padding in the y direction
-    BUTTON_PADX_VALUE = (0, 20)  # Constant padding for buttons in the x direction
 
     def __init__(self):
         super().__init__()
-        self.title('Town of Duxbury Planning Dept Project Status Sync Tool')
-        self.geometry('650x315')  # Increase the width to create space
+
+        # Bind the event of the window closing to the on_closing() function.
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # Define instance variables
+        self.quit_button = None
+        self.run_button = None
+        self.error_label = None
+        self.status_responses_entry = None
+        self.project_status_entry = None
+
+        self.settings_manager = SettingsManager(self.APP_NAME, self.APP_AUTHOR)
+
+        self.title(self.APP_NAME)
+        self.geometry(self.APP_WINDOW_DIMENSIONS)
         self.resizable(False, False)  # Make the window not resizable
 
-        self.create_widgets()
-
-
-    def create_widgets(self):  # Method to create the various widgets in the GUI
-
-        nb = ttk.Notebook(self)
-        nb.grid(row=0, column=0, sticky="nsew", padx=self.PADX_VALUE, pady=(20, 5))  # adding padding
-
-        # Create two tabs
-        main_tab = ttk.Frame(nb)
-        settings_tab = ttk.Frame(nb)
-
-        nb.add(main_tab, text='Main')
-        nb.add(settings_tab, text='Settings')
-
-        # Make the tabs stretchable
-        main_tab.grid_columnconfigure(0, weight=1)
-        main_tab.grid_rowconfigure(0, weight=1)
-        settings_tab.grid_columnconfigure(0, weight=1)
-        settings_tab.grid_rowconfigure(0, weight=1)
-
-        # Create file browser widgets for the two workbooks. Values for positioning and text are passed to the method
-        self.project_status_entry, _ = self.create_file_selection_widgets(
-            main_tab,  # pass the main tab as the parent here
-            0,
-            "Select Project Status Workbook:",
-            'project',
-            self.PADX_VALUE,
-            self.PADY_UPPER_VALUE,
-            self.PADY_LOWER_VALUE,
-            self.BUTTON_PADX_VALUE
-        )
-        self.status_responses_entry, _ = self.create_file_selection_widgets(
-            main_tab,  # pass the main tab as the parent here
-            2,
-            "Select Status Responses Workbook:",
-            'responses',
-            self.PADX_VALUE,
-            self.PADY_UPPER_VALUE,
-            self.PADY_LOWER_VALUE,
-            self.BUTTON_PADX_VALUE
-        )
-
-        # Label for displaying error messages. The color and position of label are defined here
-        self.error_label = tk.Label(self, text="", fg=self.ERROR_COLOR, justify=tk.LEFT, anchor="w")
-        self.error_label.grid(row=3, column=0, columnspan=2, sticky='w', padx=(25,25), pady=(0, 15))
-
-
-    # Configure the grid so that the first column resizes with the window
-        self.grid_columnconfigure(0, weight=1)
-
-        # Create settings elements within the settings tab
-        self.create_settings_widgets(settings_tab)
-
-        # Create the buttons' frame
-        buttonFrame = tk.Frame(self)
-        buttonFrame.place(anchor='e', relx=1.0, y=285, height=40)  # adjust these values as needed
-
-        # Define the Run and Cancel buttons
-        tk.Button(buttonFrame, text="Run", command=self.run_program).grid(row=0, column=0)
-        tk.Button(buttonFrame, text="Cancel", command=self.quit).grid(row=0, column=1, padx=(0, 25))  # padx will add padding to the right side
-
-        buttonFrame.columnconfigure(0, weight=1)  # To center the "Run" button in its column
-        buttonFrame.columnconfigure(1, weight=1)  # To center the "Cancel" button in its column
-
-
-    def create_settings_widgets(self, frame):
-        response_group = tk.LabelFrame(frame, text="Response Workbook Column Settings", padx=5, pady=5)
-        response_group.pack(padx=10, pady=10, side='left')
-
-        project_group = tk.LabelFrame(frame, text="Project Status Workbook Column Settings", padx=5, pady=5)
-        project_group.pack(padx=10, pady=10, side='left')
-
-        # setting variables
-        self.comments_col = tk.StringVar(value='G')
-        self.actionID_col = tk.StringVar(value='F')
-        self.status_col = tk.StringVar(value='H')
-
-        # Create labels and entry fields for the response group
-        tk.Label(response_group, text="'Comments' column: ").grid(row=0, column=0)
-        tk.Entry(response_group, textvariable=self.comments_col).grid(row=0, column=1)
-
-        tk.Label(response_group, text="'Action ID' column: ").grid(row=1, column=0)
-        tk.Entry(response_group, textvariable=self.actionID_col).grid(row=1, column=1)
-
-        tk.Label(response_group, text="'Status' column: ").grid(row=2, column=0)
-        tk.Entry(response_group, textvariable=self.status_col).grid(row=2, column=1)
-
-
-
-    def create_file_selection_widgets(self, frame, row, label_text, browse_arg, padx_value, pady_upper_value, pady_lower_value,
-                                      button_padx_value):
-        # Label for file selection
-        tk.Label(frame, text=label_text).grid(row=row, column=0, sticky='w', padx=padx_value, pady=pady_upper_value)
-
-        # Entry and Browse button for workbook
-        entry = tk.Entry(frame, width=58)
-        entry.grid(row=row + 1, column=0, padx=padx_value, pady=pady_lower_value, sticky='ew')
-        button = tk.Button(frame, text="Browse", command=lambda: self.browse_file(browse_arg))
-        button.grid(row=row + 1, column=1, padx=button_padx_value, pady=pady_lower_value)
-
-        return entry, button
+        self._create_widgets()
 
 
     def browse_file(self, file_type):
@@ -155,6 +66,132 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
         project_status_updater.run_sync(project_status_wb_path, status_responses_wb_path)
         messagebox.showinfo("Success", "Workbooks have been synced successfully.")
+
+    def on_closing(self):
+        self.settings_manager.save_settings()
+        self.destroy()
+
+    def _create_widgets(self):  # Method to create the various widgets in the GUI
+
+        nb = ttk.Notebook(self)
+        nb.grid(row=0, column=0, sticky="nsew", padx=10, pady=(20, 5))
+
+        # Create two tabs
+        main_tab = ttk.Frame(nb)
+        settings_tab = ttk.Frame(nb)
+        nb.add(main_tab, text='Main')
+        nb.add(settings_tab, text='Settings')
+
+        # Make the tabs stretchable
+        main_tab.grid_columnconfigure(0, weight=1)
+        main_tab.grid_rowconfigure(0, weight=1)
+        settings_tab.grid_columnconfigure(0, weight=1)
+        settings_tab.grid_rowconfigure(0, weight=1)
+
+        # Create file browser widgets for the two workbooks. Values for positioning and text are passed to the method
+        self.project_status_entry = self._create_file_selection_widgets(
+            main_tab,  # pass the main tab as the parent here
+            0,
+            "Select Project Status Workbook:",
+            'project',
+        )
+        self.status_responses_entry = self._create_file_selection_widgets(
+            main_tab,  # pass the main tab as the parent here
+            2,
+            "Select Status Responses Workbook:",
+            'responses',
+        )
+
+        # Label for displaying error messages. The color and position of label are defined here
+        self.error_label = tk.Label(self, text="", fg=self.ERROR_COLOR, justify=tk.LEFT, anchor="w")
+        self.error_label.grid(row=3, column=0, columnspan=2, sticky='w', padx=(25,25), pady=(0, 15))
+
+
+        # Configure the grid so that the first column resizes with the window
+        self.grid_columnconfigure(0, weight=1)
+
+        # Create settings elements within the settings tab
+        self._create_settings_widgets(settings_tab)
+
+        # Create the buttons' frame
+        button_frame = tk.Frame(self)
+        button_frame.place(anchor='se', relx=1.0, rely=1.0, height=40)
+
+        # Define the Run and Cancel buttons. Have the settings changed everytime a user clicks to change tabs, or
+        # cancel or run is clicked.
+        nb.bind("<<NotebookTabChanged>>", lambda event: self.settings_manager.save_settings())
+        self.run_button = tk.Button(button_frame, text="Run", command=self.run_program)
+        self.run_button.bind("<Button-1>", lambda event: self.settings_manager.save_settings())
+        self.run_button.grid(row=0, column=0)
+        self.quit_button = tk.Button(button_frame, text="Cancel", command=self.quit)
+        self.quit_button.bind("<Button-1>", lambda event: self.settings_manager.save_settings())
+        self.quit_button.grid(row=0, column=1, padx=(0, 25))
+
+        button_frame.columnconfigure(0, weight=1)  # To center the "Run" button in its column
+        button_frame.columnconfigure(1, weight=1)  # To center the "Cancel" button in its column
+
+    def _create_settings_widgets(self, frame):
+
+        # Create the two different groups. One for response workbook settings, and one for project status workbook settings.
+        response_group = self._create_settings_group(frame, "Response Workbook Column Settings", 'left')
+        project_group = self._create_settings_group(frame, "Project Status Workbook Column Settings", 'right')
+
+        # Create the labels and entry fields for the response workbook
+        self._create_settings_label_and_entry(response_group, 'Comments', 'Comments_response', 0)
+        self._create_settings_label_and_entry(response_group, 'Action ID', 'Action_ID_response', 1)
+        self._create_settings_label_and_entry(response_group, 'Status', 'Status_response', 2)
+
+        # Create labels and entry fields for the project group
+        self._create_settings_label_and_entry(project_group, 'Comments', 'Comments_project', 0)
+        self._create_settings_label_and_entry(project_group, 'Action ID', 'Action_ID_project', 1)
+        self._create_settings_label_and_entry(project_group, 'Status A', 'Status A', 0, 2, 40)
+        self._create_settings_label_and_entry(project_group, 'Status B', 'Status B', 1, 2, 40)
+        self._create_settings_label_and_entry(project_group, 'Status C', 'Status C', 2, 2, 40)
+        self._create_settings_label_and_entry(project_group, 'Status D', 'Status D', 3, 2, 40)
+        self._create_settings_label_and_entry(project_group, 'Status E', 'Status E', 4, 2, 40)
+
+        # Load settings to populate the entries with the saved values (if available)
+        self.settings_manager.load_settings()
+
+
+    def _create_settings_group(self, frame, text, side):
+        group = tk.LabelFrame(frame, text=text, padx=5, pady=5)
+        group.pack(padx=10, pady=10, side=side, anchor='n')
+        return group
+
+
+    def _create_settings_label_and_entry(self, group, label_text, settings_key, row, column=0, padx=0):
+        var = tk.StringVar(value='')
+        tk.Label(group, text=f"'{label_text}' column: ").grid(row=row, column=column, sticky='w', padx=(padx, 0))
+        entry = tk.Entry(group, textvariable=var, width=2)
+        entry.grid(row=row, column=column + 1)
+        self.settings_manager.add_setting(settings_key, entry)
+
+
+
+    def _create_file_selection_widgets(self, frame, row, label_text, browse_arg):
+        padx = 10
+        pady_lower = (10, 0)
+        pady_upper = (0, 5)
+        button_padx = (0, 20)
+        label_width = 58
+
+
+        # Label for file selection
+        tk.Label(frame, text=label_text).grid(row=row, column=0, sticky='nw', padx=padx, pady=pady_upper)
+
+        # Entry and Browse button for workbook
+        entry = tk.Entry(frame, width=label_width)
+        entry.grid(row=row + 1, column=0, padx=padx, pady=pady_lower, sticky='new')
+        button = tk.Button(frame, text="Browse", command=lambda: self.browse_file(browse_arg))
+        button.grid(row=row + 1, column=1, padx=button_padx, pady=pady_lower, sticky='n')
+
+        # Stop the label row from expanding
+        frame.grid_rowconfigure(row, weight=0)
+        # Allow the entry and button row to expand
+        frame.grid_rowconfigure(row + 1, weight=1)
+
+        return entry
 
     def _reset_error_label(self):
         self.error_label.config(text="")
