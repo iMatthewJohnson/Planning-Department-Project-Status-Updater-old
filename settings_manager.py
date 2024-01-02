@@ -36,3 +36,10 @@ class SettingsManager:
             value = self.config.get('Settings', setting_key, fallback='')
             entry.delete(0, tk.END)
             entry.insert(0, value)
+
+
+    def get_entry_values(self):
+        return {
+            key: self.settings_dict[key].get()
+            for key in self.settings_dict.keys()
+        }

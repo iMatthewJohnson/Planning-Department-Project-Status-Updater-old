@@ -4,12 +4,14 @@ import os
 import project_status_updater
 from settings_manager import SettingsManager
 
+SYNC_SUCCESS_MESSAGE = "Workbooks have been synced successfully."
+
 
 class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inherits from tk.Tk
     APP_NAME = 'ToD Planning Dept Project Status Sync Tool'
     APP_AUTHOR = 'gov.duxbury-ma'
     APP_WINDOW_DIMENSIONS = '750x350'
-    ERROR_COLOR = 'red'  # Constant for the error message color
+    ERROR_COLOR = 'red'
 
     def __init__(self):
         super().__init__()
@@ -21,8 +23,8 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         self.quit_button = None
         self.run_button = None
         self.error_label = None
-        self.status_responses_entry = None
-        self.project_status_entry = None
+        self.responses_wb_path_entry = None
+        self.project_status_wb_path_entry = None
 
         self.settings_manager = SettingsManager(self.APP_NAME, self.APP_AUTHOR)
 
@@ -44,18 +46,18 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
             # If the file type is 'project',
             # the project_status_entry field is cleared and the new path is inserted.
             if file_type == 'project':
-                self.project_status_entry.delete(0, tk.END)
-                self.project_status_entry.insert(0, file_path)
+                self.project_status_wb_path_entry.delete(0, tk.END)
+                self.project_status_wb_path_entry.insert(0, file_path)
             # If the file type is 'responses',
             # the status_responses_entry field is cleared and the new path is inserted.
             elif file_type == 'responses':
-                self.status_responses_entry.delete(0, tk.END)
-                self.status_responses_entry.insert(0, file_path)
+                self.responses_wb_path_entry.delete(0, tk.END)
+                self.responses_wb_path_entry.insert(0, file_path)
 
 
     def run_program(self):
-        project_status_wb_path = self.project_status_entry.get()
-        status_responses_wb_path = self.status_responses_entry.get()
+        project_status_wb_path = self.project_status_wb_path_entry.get()
+        status_responses_wb_path = self.responses_wb_path_entry.get()
 
         self._reset_error_label()
 
@@ -64,93 +66,109 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
             self.error_label.config(text="ERROR: " + error_messages)
             return
 
-        project_status_updater.run_sync(project_status_wb_path, status_responses_wb_path)
-        messagebox.showinfo("Success", "Workbooks have been synced successfully.")
+        project_status_updater.run_sync(project_status_wb_path, status_responses_wb_path, self.settings_manager.get_entry_values())
+        messagebox.showinfo("Success", SYNC_SUCCESS_MESSAGE)
 
     def on_closing(self):
         self.settings_manager.save_settings()
         self.destroy()
 
-    def _create_widgets(self):  # Method to create the various widgets in the GUI
 
+    def _create_widgets(self):
+        nb = self._setup_notebook()
+        main_tab, settings_tab = self._create_notebook_tabs(nb)
+        self._setup_file_selection_widgets(main_tab)
+        self._setup_error_label()
+        self._create_settings_widgets(settings_tab)
+        self._setup_buttons(nb)
+
+    def _setup_notebook(self):
         nb = ttk.Notebook(self)
         nb.grid(row=0, column=0, sticky="nsew", padx=10, pady=(20, 5))
+        return nb
 
-        # Create two tabs
-        main_tab = ttk.Frame(nb)
-        settings_tab = ttk.Frame(nb)
+    def _create_notebook_tabs(self, nb):
+        main_tab = self._new_tab(nb)
+        settings_tab = self._new_tab(nb)
         nb.add(main_tab, text='Main')
         nb.add(settings_tab, text='Settings')
+        return main_tab, settings_tab
 
-        # Make the tabs stretchable
-        main_tab.grid_columnconfigure(0, weight=1)
-        main_tab.grid_rowconfigure(0, weight=1)
-        settings_tab.grid_columnconfigure(0, weight=1)
-        settings_tab.grid_rowconfigure(0, weight=1)
+    def _new_tab(self, nb):
+        tab = ttk.Frame(nb)
+        tab.grid_columnconfigure(0, weight=1)
+        tab.grid_rowconfigure(0, weight=1)
+        return tab
 
-        # Create file browser widgets for the two workbooks. Values for positioning and text are passed to the method
-        self.project_status_entry = self._create_file_selection_widgets(
-            main_tab,  # pass the main tab as the parent here
+
+    def _setup_file_selection_widgets(self, main_tab):
+        self.project_status_wb_path_entry = self._create_file_selection_widgets(
+            main_tab,
             0,
             "Select Project Status Workbook:",
             'project',
         )
-        self.status_responses_entry = self._create_file_selection_widgets(
-            main_tab,  # pass the main tab as the parent here
+        self.responses_wb_path_entry = self._create_file_selection_widgets(
+            main_tab,
             2,
             "Select Status Responses Workbook:",
             'responses',
         )
 
-        # Label for displaying error messages. The color and position of label are defined here
+    def _setup_error_label(self):
         self.error_label = tk.Label(self, text="", fg=self.ERROR_COLOR, justify=tk.LEFT, anchor="w")
         self.error_label.grid(row=3, column=0, columnspan=2, sticky='w', padx=(25,25), pady=(0, 15))
 
+    def _setup_buttons(self, nb):
+        button_frame = self._create_buttons_frame()
+        self._create_run_button(button_frame, nb)
+        self._create_quit_button(button_frame, nb)
 
-        # Configure the grid so that the first column resizes with the window
-        self.grid_columnconfigure(0, weight=1)
-
-        # Create settings elements within the settings tab
-        self._create_settings_widgets(settings_tab)
-
-        # Create the buttons' frame
+    def _create_buttons_frame(self):
         button_frame = tk.Frame(self)
         button_frame.place(anchor='se', relx=1.0, rely=1.0, height=40)
+        for i in range(2):  # To center both buttons in their respective columns
+            button_frame.columnconfigure(i, weight=1)
+        return button_frame
 
-        # Define the Run and Cancel buttons. Have the settings changed everytime a user clicks to change tabs, or
-        # cancel or run is clicked.
-        nb.bind("<<NotebookTabChanged>>", lambda event: self.settings_manager.save_settings())
+    def _create_run_button(self, button_frame, nb):
         self.run_button = tk.Button(button_frame, text="Run", command=self.run_program)
-        self.run_button.bind("<Button-1>", lambda event: self.settings_manager.save_settings())
         self.run_button.grid(row=0, column=0)
+
+    def _create_quit_button(self, button_frame, nb):
         self.quit_button = tk.Button(button_frame, text="Cancel", command=self.quit)
         self.quit_button.bind("<Button-1>", lambda event: self.settings_manager.save_settings())
         self.quit_button.grid(row=0, column=1, padx=(0, 25))
 
-        button_frame.columnconfigure(0, weight=1)  # To center the "Run" button in its column
-        button_frame.columnconfigure(1, weight=1)  # To center the "Cancel" button in its column
-
     def _create_settings_widgets(self, frame):
+        # Create a list with the info about the groups we want to create, each tuple contains the title and position
+        group_settings = [('Response Workbook Column Settings', 'left'),
+                          ('Project Status Workbook Column Settings', 'right')]
 
-        # Create the two different groups. One for response workbook settings, and one for project status workbook settings.
-        response_group = self._create_settings_group(frame, "Response Workbook Column Settings", 'left')
-        project_group = self._create_settings_group(frame, "Project Status Workbook Column Settings", 'right')
+        # Create a dictionary for specific inputs for each group
+        label_entry_settings = {
+            'Response Workbook Column Settings': [('Comments', 'comments_response', 0),
+                                                  ('Action ID', 'action_ID_response', 1),
+                                                  ('Status', 'status_response', 2)],
+            'Project Status Workbook Column Settings': [('Comments', 'comments_project', 0),
+                                                        ('Action ID', 'action_ID_project', 1),
+                                                        ('Status A', 'status_a', 0, 2, 40),
+                                                        ('Status B', 'status_b', 1, 2, 40),
+                                                        ('Status C', 'status_c', 2, 2, 40),
+                                                        ('Status D', 'status_d', 3, 2, 40),
+                                                        ('Status E', 'status_e', 4, 2, 40),
+                                                        ('Status F', 'status_f', 5, 2, 40)]
+        }
 
-        # Create the labels and entry fields for the response workbook
-        self._create_settings_label_and_entry(response_group, 'Comments', 'Comments_response', 0)
-        self._create_settings_label_and_entry(response_group, 'Action ID', 'Action_ID_response', 1)
-        self._create_settings_label_and_entry(response_group, 'Status', 'Status_response', 2)
+        # Using a for loop to create the two groups
+        for title, position in group_settings:
+            group = self._create_settings_group(frame, title, position)
 
-        # Create labels and entry fields for the project group
-        self._create_settings_label_and_entry(project_group, 'Comments', 'Comments_project', 0)
-        self._create_settings_label_and_entry(project_group, 'Action ID', 'Action_ID_project', 1)
-        self._create_settings_label_and_entry(project_group, 'Status A', 'Status A', 0, 2, 40)
-        self._create_settings_label_and_entry(project_group, 'Status B', 'Status B', 1, 2, 40)
-        self._create_settings_label_and_entry(project_group, 'Status C', 'Status C', 2, 2, 40)
-        self._create_settings_label_and_entry(project_group, 'Status D', 'Status D', 3, 2, 40)
-        self._create_settings_label_and_entry(project_group, 'Status E', 'Status E', 4, 2, 40)
+            # Now create the labels and entry fields for the response workbook
+            for setting in label_entry_settings[title]:
+                self._create_settings_label_and_entry(group, *setting)
 
-        # Load settings to populate the entries with the saved values (if available)
+                # Load settings to populate the entries with the saved values (if available)
         self.settings_manager.load_settings()
 
 
