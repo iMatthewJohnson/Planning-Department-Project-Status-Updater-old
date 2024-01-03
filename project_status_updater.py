@@ -5,6 +5,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import column_index_from_string
 
 
+
 def update_comments(project_status_workbook, status_responses_workbook, column_letters):
     ps_wb = load_workbook(filename=project_status_workbook)
     sr_wb = load_workbook(filename=status_responses_workbook)

@@ -3,8 +3,22 @@ from tkinter import filedialog, messagebox, ttk
 import os
 import project_status_updater
 from settings_manager import SettingsManager
+from file_selection_widget import FileSelectionWidget
 
 SYNC_SUCCESS_MESSAGE = "Workbooks have been synced successfully."
+
+COMMENTS_RESPONSE = 'comments_response'
+ACTION_ID_RESPONSE = 'action_ID_response'
+STATUS_RESPONSE = 'status_response'
+
+COMMENTS_PROJECT = 'comments_project'
+ACTION_ID_PROJECT = 'action_ID_project'
+STATUS_A = 'status_a'
+STATUS_B = 'status_b'
+STATUS_C = 'status_c'
+STATUS_D = 'status_d'
+STATUS_E = 'status_e'
+STATUS_F = 'status_f'
 
 
 class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inherits from tk.Tk
@@ -35,29 +49,9 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         self._create_widgets()
 
 
-    def browse_file(self, file_type):
-        # Creates a dialog box that allows the user to select a file.
-        # The "Excel files" denotation allows only .xlsx files to be selected.
-        file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
-
-        # If a file is selected (meaning the file dialog did not return an empty string),
-        # the path of the file is inserted into a specific entry field, based on the file type.
-        if file_path:
-            # If the file type is 'project',
-            # the project_status_entry field is cleared and the new path is inserted.
-            if file_type == 'project':
-                self.project_status_wb_path_entry.delete(0, tk.END)
-                self.project_status_wb_path_entry.insert(0, file_path)
-            # If the file type is 'responses',
-            # the status_responses_entry field is cleared and the new path is inserted.
-            elif file_type == 'responses':
-                self.responses_wb_path_entry.delete(0, tk.END)
-                self.responses_wb_path_entry.insert(0, file_path)
-
-
     def run_program(self):
-        project_status_wb_path = self.project_status_wb_path_entry.get()
-        status_responses_wb_path = self.responses_wb_path_entry.get()
+        project_status_wb_path = self.project_status_file_selection_widget.get_entry_content()
+        status_responses_wb_path = self.status_responses_file_selection_widget.get_entry_content()
 
         self._reset_error_label()
 
@@ -102,18 +96,9 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
 
     def _setup_file_selection_widgets(self, main_tab):
-        self.project_status_wb_path_entry = self._create_file_selection_widgets(
-            main_tab,
-            0,
-            "Select Project Status Workbook:",
-            'project',
-        )
-        self.responses_wb_path_entry = self._create_file_selection_widgets(
-            main_tab,
-            2,
-            "Select Status Responses Workbook:",
-            'responses',
-        )
+        self.project_status_file_selection_widget = FileSelectionWidget(main_tab, 0,'Select Project Status Workbook:')
+        self.status_responses_file_selection_widget = FileSelectionWidget(main_tab, 2, 'Select Status Responses Workbook:')
+
 
     def _setup_error_label(self):
         self.error_label = tk.Label(self, text="", fg=self.ERROR_COLOR, justify=tk.LEFT, anchor="w")
@@ -147,17 +132,17 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
         # Create a dictionary for specific inputs for each group
         label_entry_settings = {
-            'Response Workbook Column Settings': [('Comments', 'comments_response', 0),
-                                                  ('Action ID', 'action_ID_response', 1),
-                                                  ('Status', 'status_response', 2)],
-            'Project Status Workbook Column Settings': [('Comments', 'comments_project', 0),
-                                                        ('Action ID', 'action_ID_project', 1),
-                                                        ('Status A', 'status_a', 0, 2, 40),
-                                                        ('Status B', 'status_b', 1, 2, 40),
-                                                        ('Status C', 'status_c', 2, 2, 40),
-                                                        ('Status D', 'status_d', 3, 2, 40),
-                                                        ('Status E', 'status_e', 4, 2, 40),
-                                                        ('Status F', 'status_f', 5, 2, 40)]
+            'Response Workbook Column Settings': [('Comments', COMMENTS_RESPONSE, 0),
+                                                  ('Action ID', ACTION_ID_RESPONSE, 1),
+                                                  ('Status', STATUS_RESPONSE, 2)],
+            'Project Status Workbook Column Settings': [('Comments', COMMENTS_PROJECT, 0),
+                                                        ('Action ID', ACTION_ID_PROJECT, 1),
+                                                        ('Status A', STATUS_A, 0, 2, 40),
+                                                        ('Status B', STATUS_B, 1, 2, 40),
+                                                        ('Status C', STATUS_C, 2, 2, 40),
+                                                        ('Status D', STATUS_D, 3, 2, 40),
+                                                        ('Status E', STATUS_E, 4, 2, 40),
+                                                        ('Status F', STATUS_F, 5, 2, 40)]
         }
 
         # Using a for loop to create the two groups
@@ -185,31 +170,6 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         entry.grid(row=row, column=column + 1)
         self.settings_manager.add_setting(settings_key, entry)
 
-
-
-    def _create_file_selection_widgets(self, frame, row, label_text, browse_arg):
-        padx = 10
-        pady_lower = (10, 0)
-        pady_upper = (0, 5)
-        button_padx = (0, 20)
-        label_width = 58
-
-
-        # Label for file selection
-        tk.Label(frame, text=label_text).grid(row=row, column=0, sticky='nw', padx=padx, pady=pady_upper)
-
-        # Entry and Browse button for workbook
-        entry = tk.Entry(frame, width=label_width)
-        entry.grid(row=row + 1, column=0, padx=padx, pady=pady_lower, sticky='new')
-        button = tk.Button(frame, text="Browse", command=lambda: self.browse_file(browse_arg))
-        button.grid(row=row + 1, column=1, padx=button_padx, pady=pady_lower, sticky='n')
-
-        # Stop the label row from expanding
-        frame.grid_rowconfigure(row, weight=0)
-        # Allow the entry and button row to expand
-        frame.grid_rowconfigure(row + 1, weight=1)
-
-        return entry
 
     def _reset_error_label(self):
         self.error_label.config(text="")
