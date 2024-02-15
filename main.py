@@ -1,9 +1,16 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import os
+import json
 import project_status_updater
 from settings_manager import SettingsManager
 from file_selection_widget import FileSelectionWidget
+
+def load_config():
+    with open('config.json', 'r') as config_file:
+        return json.load(config_file)
+
+config = load_config()
 
 SYNC_SUCCESS_MESSAGE = "Workbooks have been synced successfully."
 
@@ -22,9 +29,9 @@ STATUS_F = 'status_f'
 
 
 class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inherits from tk.Tk
-    APP_NAME = 'ToD Planning Dept Project Status Sync Tool'
-    APP_AUTHOR = 'gov.duxbury-ma'
-    APP_WINDOW_DIMENSIONS = '750x350'
+    APP_NAME = config['app_info']['title']
+    APP_AUTHOR = config['app_info']['author']
+    APP_WINDOW_DIMENSIONS = config['window']['dimensions']
     ERROR_COLOR = 'red'
 
     def __init__(self):
@@ -33,18 +40,18 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         # Bind the event of the window closing to the on_closing() function.
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # Define instance variables
-        self.quit_button = None
-        self.run_button = None
-        self.error_label = None
-        self.responses_wb_path_entry = None
-        self.project_status_wb_path_entry = None
-
         self.settings_manager = SettingsManager(self.APP_NAME, self.APP_AUTHOR)
 
         self.title(self.APP_NAME)
         self.geometry(self.APP_WINDOW_DIMENSIONS)
         self.resizable(False, False)  # Make the window not resizable
+
+        # Define instance variables that will be defined later in the setup
+        self.quit_button = None
+        self.run_button = None
+        self.error_label = None
+        self.responses_wb_path_entry = None
+        self.project_status_wb_path_entry = None
 
         self._create_widgets()
 
@@ -96,8 +103,12 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
 
     def _setup_file_selection_widgets(self, main_tab):
-        self.project_status_file_selection_widget = FileSelectionWidget(main_tab, 0,'Select Project Status Workbook:')
-        self.status_responses_file_selection_widget = FileSelectionWidget(main_tab, 2, 'Select Status Responses Workbook:')
+
+        self.project_status_file_selection_widget = FileSelectionWidget(controller=self, parent=main_tab, row=0,
+                                                                        label_text=config['labels']['file_selection_project_status'])
+
+        self.status_responses_file_selection_widget = FileSelectionWidget(controller=self, parent=main_tab, row=2,
+                                                                          label_text=config['labels']['file_selection_status_responses'])
 
 
     def _setup_error_label(self):
@@ -193,6 +204,12 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         if error_messages:
             return '; '.join(error_messages)
         return None
+
+    def browse_button_pressed(self, file_dialogue):
+
+        # Ask and get the file path by selecting it. Limit to Excel files
+        file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
+        file_dialogue.set_entry_content(file_path)
 
 
 if __name__ == "__main__":

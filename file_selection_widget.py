@@ -22,19 +22,22 @@ _LABEL_COLUMN = 0
 _LABEL_STICKY = 'nw' # Anchored in upper left corner
 
 class FileSelectionWidget(ttk.Frame):
-    def __init__(self, parent, row, label_text, **kwargs):
+    def __init__(self, controller, parent, row, label_text, **kwargs):
         super().__init__(parent, **kwargs)
+
+        self.controller = controller
 
         # Label for file selection
         self.label = ttk.Label(parent, text=label_text)
-        self.label.grid(sticky=_LABEL_STICKY, row=row, column=_LABEL_COLUMN, padx=_LABEL_PADX, pady=_LABEL_PADY)
+        self.label.grid(sticky=_LABEL_STICKY, row=row, column=_LABEL_COLUMN,
+                        padx=_LABEL_PADX, pady=_LABEL_PADY)
 
         # Entry for the file
         self.entry = ttk.Entry(parent, width=_ENTRY_WIDTH)
         self.entry.grid(sticky=_ENTRY_STICKY, row=row + 1, column = _ENTRY_COLUMN, padx=_ENTRY_PADX, pady=_ENTRY_PADY)
 
         # Browse button
-        self.button = ttk.Button(parent, text=_BROWSE_BUTTON_TEXT, command=self.browse_file)
+        self.button = ttk.Button(parent, text=_BROWSE_BUTTON_TEXT, command=self.browse_button_pressed)
         self.button.grid(row=row + 1, column=_BUTTON_COLUMN, padx=_BUTTON_PADX, pady=_BUTTON_PADY,sticky=_BUTTON_STICKY)
 
         # Stop the label row from expanding
@@ -49,8 +52,5 @@ class FileSelectionWidget(ttk.Frame):
         self.entry.delete(0, tk.END)
         self.entry.insert(0, content)
 
-    def browse_file(self):
-        # Ask and get the file path by selecting it. Limit to Excel files
-        file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
-
-        self.set_entry_content(file_path)
+    def browse_button_pressed(self):
+        self.controller.browse_button_pressed(self)

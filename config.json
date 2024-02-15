@@ -1,0 +1,16 @@
+{
+  "app_info": {
+    "title": "ToD Planning Dept Project Status Sync Tool",
+    "author": "gov.duxbury-ma"
+  },
+  "window": {
+    "dimensions": "750x350"
+  },
+  "messages": {
+    "sync_success": "Workbooks have been synced successfully."
+  },
+  "labels":{
+    "file_selection_project_status": "Select Project Status Workbook:",
+    "file_selection_status_responses": "Select Status Responses Workbook:"
+  }
+}
