@@ -6,6 +6,7 @@ import project_status_updater
 from settings_manager import SettingsManager
 from file_selection_widget import FileSelectionWidget
 from notebook import Notebook
+from status_label import StatusLabel
 
 def load_config():
     with open('config.json', 'r') as config_file:
@@ -50,7 +51,7 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         # Define instance variables that will be defined later in the setup
         self.quit_button = None
         self.run_button = None
-        self.error_label = None
+        self.status_label = None
         self.responses_wb_path_entry = None
         self.project_status_wb_path_entry = None
 
@@ -61,15 +62,15 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         project_status_wb_path = self.project_status_file_selection_widget.get_entry_content()
         status_responses_wb_path = self.status_responses_file_selection_widget.get_entry_content()
 
-        self._reset_error_label()
+        self.status_label.reset_label()
 
         error_messages = self._validate_file_paths(project_status_wb_path, status_responses_wb_path)
         if error_messages:
-            self.error_label.config(text="ERROR: " + error_messages)
+            self.status_label.error_message(text='ERROR: ' + error_messages)
             return
 
         project_status_updater.run_sync(project_status_wb_path, status_responses_wb_path, self.settings_manager.get_entry_values())
-        messagebox.showinfo("Success", SYNC_SUCCESS_MESSAGE)
+        self.status_label.success_message('SUCCESS: ' + SYNC_SUCCESS_MESSAGE)
 
     def on_closing(self):
         self.settings_manager.save_settings()
@@ -81,7 +82,8 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         main_tab = nb.add_tab('Main')
         settings_tab = nb.add_tab('Settings')
         self._setup_file_selection_widgets(main_tab)
-        self._setup_error_label()
+        self.status_label = StatusLabel(parent=self, row=3, column=0, columnspan=2)
+
         self._create_settings_widgets(settings_tab)
         self._setup_buttons(nb)
 
@@ -92,11 +94,6 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
         self.status_responses_file_selection_widget = FileSelectionWidget(controller=self, parent=frame, row=2,
                                                                           label_text=config['labels']['file_selection_status_responses'])
-
-
-    def _setup_error_label(self):
-        self.error_label = tk.Label(self, text="", fg=self.ERROR_COLOR, justify=tk.LEFT, anchor="w")
-        self.error_label.grid(row=3, column=0, columnspan=2, sticky='w', padx=(25,25), pady=(0, 15))
 
     def _setup_buttons(self, nb):
         button_frame = self._create_buttons_frame()
@@ -163,13 +160,6 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         entry = tk.Entry(group, textvariable=var, width=2)
         entry.grid(row=row, column=column + 1)
         self.settings_manager.add_setting(settings_key, entry)
-
-
-    def _reset_error_label(self):
-        self.error_label.config(text="")
-        self.update_idletasks()
-        wrap_length = self.winfo_width() - self.error_label.winfo_x() - 30 # 20 is for some right padding
-        self.error_label.config(wraplength=wrap_length)
 
     def _validate_file_paths(self, project_status_wb_path, status_responses_wb_path):
         error_messages = []

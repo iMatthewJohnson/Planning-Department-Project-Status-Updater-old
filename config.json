@@ -4,7 +4,7 @@
     "author": "gov.duxbury-ma"
   },
   "window": {
-    "dimensions": "750x350"
+    "dimensions": "750x400"
   },
   "messages": {
     "sync_success": "Workbooks have been synced successfully."
