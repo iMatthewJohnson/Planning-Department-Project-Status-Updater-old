@@ -7,6 +7,7 @@ from openpyxl.utils import column_index_from_string
 
 
 def update_comments(project_status_workbook, status_responses_workbook, column_letters):
+
     ps_wb = load_workbook(filename=project_status_workbook)
     sr_wb = load_workbook(filename=status_responses_workbook)
 
@@ -27,7 +28,7 @@ def update_comments(project_status_workbook, status_responses_workbook, column_l
 
     # Iterate over action ID and comments in the responses workbook
     for sr_row in sr_ws.iter_rows(min_row=2, values_only=True):
-        action_id = sr_row[get_index('action_ID_response')].lower()
+        action_id = sr_row[get_index('action_id_response')].lower()
         comment = sr_row[get_index('comments_response')]
         status_letter = sr_row[get_index('status_response')][0] if sr_row[get_index('status_response')] else ''  # Get first char of status, check if not None
         found = False
@@ -40,7 +41,7 @@ def update_comments(project_status_workbook, status_responses_workbook, column_l
                 ps_ws = ps_wb[sheet]
                 for ps_row in ps_ws.iter_rows(min_row=2):
                     # Look for the matching action ID
-                    if ps_row[get_index('action_ID_project')].value and ps_row[get_index('action_ID_project')].value.lower() == action_id:
+                    if ps_row[get_index('action_id_project')].value and ps_row[get_index('action_id_project')].value.lower() == action_id:
                         # Clear existing statuses
                         for col_index in status_to_col.values():
                             ps_row[col_index].value = None

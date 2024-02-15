@@ -17,29 +17,24 @@ class SettingsManager:
         # Load existing settings if they exist
         if os.path.exists(self.settings_file):
             self.config.read(self.settings_file)
+            self.settings_dict = dict(self.config.items('Settings'))
 
-    def add_setting(self, key, setting_val):
-        self.settings_dict[key] = setting_val
+    def save_settings(self, settings_dict=None):
 
-    def save_settings(self):
+        if settings_dict is not None:
+            self.settings_dict = settings_dict
+
         if not self.config.has_section('Settings'):  # Ensure 'Settings' section is present
             self.config.add_section('Settings')
 
-        for setting_key, entry in self.settings_dict.items():
-            self.config.set('Settings', setting_key, entry.get())
+        for setting_key, entry_value in settings_dict.items():
+            self.config.set('Settings', setting_key, entry_value)
 
         with open(self.settings_file, 'w') as f:
             self.config.write(f)
 
-    def load_settings(self):
-        for setting_key, entry in self.settings_dict.items():
-            value = self.config.get('Settings', setting_key, fallback='')
-            entry.delete(0, tk.END)
-            entry.insert(0, value)
+    def update_setting(self, settings_key, value):
+        self.settings_dict[settings_key] = value
 
-
-    def get_entry_values(self):
-        return {
-            key: self.settings_dict[key].get()
-            for key in self.settings_dict.keys()
-        }
+    def get_settings(self):
+        return self.settings_dict.copy()

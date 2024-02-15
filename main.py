@@ -5,8 +5,9 @@ import json
 import project_status_updater
 from settings_manager import SettingsManager
 from file_selection_widget import FileSelectionWidget
-from notebook import Notebook
+from notebook_widget import NotebookWidget
 from status_label import StatusLabel
+from settings_widget import SettingsWidget
 
 def load_config():
     with open('config.json', 'r') as config_file:
@@ -17,11 +18,11 @@ config = load_config()
 SYNC_SUCCESS_MESSAGE = "Workbooks have been synced successfully."
 
 COMMENTS_RESPONSE = 'comments_response'
-ACTION_ID_RESPONSE = 'action_ID_response'
+ACTION_ID_RESPONSE = 'action_id_response'
 STATUS_RESPONSE = 'status_response'
 
 COMMENTS_PROJECT = 'comments_project'
-ACTION_ID_PROJECT = 'action_ID_project'
+ACTION_ID_PROJECT = 'action_id_project'
 STATUS_A = 'status_a'
 STATUS_B = 'status_b'
 STATUS_C = 'status_c'
@@ -54,6 +55,7 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
         self.status_label = None
         self.responses_wb_path_entry = None
         self.project_status_wb_path_entry = None
+        self.settings_widget = None
 
         self._create_widgets()
 
@@ -69,16 +71,16 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
             self.status_label.error_message(text='ERROR: ' + error_messages)
             return
 
-        project_status_updater.run_sync(project_status_wb_path, status_responses_wb_path, self.settings_manager.get_entry_values())
+        project_status_updater.run_sync(project_status_wb_path, status_responses_wb_path, self.settings_manager.get_settings())
         self.status_label.success_message('SUCCESS: ' + SYNC_SUCCESS_MESSAGE)
 
     def on_closing(self):
-        self.settings_manager.save_settings()
+        self.save_settings()
         self.destroy()
 
 
     def _create_widgets(self):
-        nb = Notebook(parent=self)
+        nb = NotebookWidget(parent=self)
         main_tab = nb.add_tab('Main')
         settings_tab = nb.add_tab('Settings')
         self._setup_file_selection_widgets(main_tab)
@@ -113,10 +115,13 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
     def _create_quit_button(self, button_frame, nb):
         self.quit_button = tk.Button(button_frame, text="Cancel", command=self.quit)
-        self.quit_button.bind("<Button-1>", lambda event: self.settings_manager.save_settings())
+        self.quit_button.bind("<Button-1>", lambda event: self.save_settings())
         self.quit_button.grid(row=0, column=1, padx=(0, 25))
 
     def _create_settings_widgets(self, frame):
+        self.settings_widget = SettingsWidget(controller=self, frame=frame)
+
+
         # Create a list with the info about the groups we want to create, each tuple contains the title and position
         group_settings = [('Response Workbook Column Settings', 'left'),
                           ('Project Status Workbook Column Settings', 'right')]
@@ -138,28 +143,24 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
         # Using a for loop to create the two groups
         for title, position in group_settings:
-            group = self._create_settings_group(frame, title, position)
+            group = self.settings_widget.create_settings_group(title, position)
 
             # Now create the labels and entry fields for the response workbook
             for setting in label_entry_settings[title]:
-                self._create_settings_label_and_entry(group, *setting)
+                self.settings_widget.create_settings_label_and_entry(group, *setting)
 
                 # Load settings to populate the entries with the saved values (if available)
-        self.settings_manager.load_settings()
+        self.load_settings()
 
+    def load_settings(self):
+        for key, entry_value in self.settings_manager.get_settings().items():
+            self.settings_widget.set_entry_value(key, entry_value)
 
-    def _create_settings_group(self, frame, text, side):
-        group = tk.LabelFrame(frame, text=text, padx=5, pady=5)
-        group.pack(padx=10, pady=10, side=side, anchor='n')
-        return group
+    def save_settings(self):
+        self.settings_manager.save_settings(self.settings_widget.get_all_entry_values())
 
-
-    def _create_settings_label_and_entry(self, group, label_text, settings_key, row, column=0, padx=0):
-        var = tk.StringVar(value='')
-        tk.Label(group, text=f"'{label_text}' column: ").grid(row=row, column=column, sticky='w', padx=(padx, 0))
-        entry = tk.Entry(group, textvariable=var, width=2)
-        entry.grid(row=row, column=column + 1)
-        self.settings_manager.add_setting(settings_key, entry)
+    def settings_value_updated(self, settings_key, value):
+        self.settings_manager.update_setting(settings_key, value)
 
     def _validate_file_paths(self, project_status_wb_path, status_responses_wb_path):
         error_messages = []

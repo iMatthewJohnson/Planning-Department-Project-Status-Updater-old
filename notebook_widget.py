@@ -7,7 +7,7 @@ _NOTEBOOK_STICKY = "nsew" # Stretch out to all 4 corners of frame
 _NOTEBOOK_PADX = 10
 _NOTEBOOK_PADY = (20, 5)
 
-class Notebook(ttk.Frame):
+class NotebookWidget(ttk.Frame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
 
