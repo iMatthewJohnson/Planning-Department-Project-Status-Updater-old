@@ -5,6 +5,7 @@ import json
 import project_status_updater
 from settings_manager import SettingsManager
 from file_selection_widget import FileSelectionWidget
+from notebook import Notebook
 
 def load_config():
     with open('config.json', 'r') as config_file:
@@ -76,38 +77,20 @@ class ProjectStatusUpdaterApp(tk.Tk):  # Define the application class which inhe
 
 
     def _create_widgets(self):
-        nb = self._setup_notebook()
-        main_tab, settings_tab = self._create_notebook_tabs(nb)
+        nb = Notebook(parent=self)
+        main_tab = nb.add_tab('Main')
+        settings_tab = nb.add_tab('Settings')
         self._setup_file_selection_widgets(main_tab)
         self._setup_error_label()
         self._create_settings_widgets(settings_tab)
         self._setup_buttons(nb)
 
-    def _setup_notebook(self):
-        nb = ttk.Notebook(self)
-        nb.grid(row=0, column=0, sticky="nsew", padx=10, pady=(20, 5))
-        return nb
+    def _setup_file_selection_widgets(self, frame):
 
-    def _create_notebook_tabs(self, nb):
-        main_tab = self._new_tab(nb)
-        settings_tab = self._new_tab(nb)
-        nb.add(main_tab, text='Main')
-        nb.add(settings_tab, text='Settings')
-        return main_tab, settings_tab
-
-    def _new_tab(self, nb):
-        tab = ttk.Frame(nb)
-        tab.grid_columnconfigure(0, weight=1)
-        tab.grid_rowconfigure(0, weight=1)
-        return tab
-
-
-    def _setup_file_selection_widgets(self, main_tab):
-
-        self.project_status_file_selection_widget = FileSelectionWidget(controller=self, parent=main_tab, row=0,
+        self.project_status_file_selection_widget = FileSelectionWidget(controller=self, parent=frame, row=0,
                                                                         label_text=config['labels']['file_selection_project_status'])
 
-        self.status_responses_file_selection_widget = FileSelectionWidget(controller=self, parent=main_tab, row=2,
+        self.status_responses_file_selection_widget = FileSelectionWidget(controller=self, parent=frame, row=2,
                                                                           label_text=config['labels']['file_selection_status_responses'])
 
 
